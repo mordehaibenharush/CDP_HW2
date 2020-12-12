@@ -2,16 +2,19 @@ import multiprocessing
 from scipy import ndimage
 import numpy as np
 import random
+import utils
 
 
 class Worker(multiprocessing.Process):
     
     def __init__(self, jobs, result, training_data, batch_size):
         super().__init__()
-        self.jobs = jobs
-        self.result = result
-        self.training_data = training_data
+        self.jobs_queue = jobs
+        self.result_queue = result
+        self.data = training_data[0]
+        self.labels = training_data[1]
         self.batch_size = batch_size
+        #self.batch = utils.create_batches(training_data[0], training_data[1], batch_size)
         ''' Initialize Worker and it's members.
 
         Parameters
@@ -31,38 +34,10 @@ class Worker(multiprocessing.Process):
     @staticmethod
     def rotate(image, angle):
         return ndimage.rotate(image, angle, reshape=False)
-        '''Rotate given image to the given angle
-
-        Parameters
-        ----------
-        image : numpy array
-            An array of size 784 of pixels
-        angle : int
-            The angle to rotate the image
-            
-        Return
-        ------
-        An numpy array of same shape
-        '''
 
     @staticmethod
     def shift(image, dx, dy):
         return ndimage.shift(image, [dx, dy])
-        '''Shift given image
-
-        Parameters
-        ----------
-        image : numpy array
-            An array of shape 784 of pixels
-        dx : int
-            The number of pixels to move in the x-axis
-        dy : int
-            The number of pixels to move in the y-axis
-            
-        Return
-        ------
-        An numpy array of same shape
-        '''
     
     @staticmethod
     def step_func(image, steps):
@@ -70,19 +45,6 @@ class Worker(multiprocessing.Process):
         np.floor(image)
         image *= (1/(steps-1))
         return image
-        '''Transform the image pixels acording to the step function
-
-        Parameters
-        ----------
-        image : numpy array
-            An array of shape 784 of pixels
-        steps : int
-            The number of steps between 0 and 1
-
-        Return
-        ------
-        An numpy array of same shape
-        '''
 
     @staticmethod
     def skew(image, tilt):
@@ -93,19 +55,6 @@ class Worker(multiprocessing.Process):
             s = tilt * y
             skewed[y, :-s] = image[y, s:]
         return skewed
-        '''Skew the image
-
-        Parameters
-        ----------
-        image : numpy array
-            An array of size 784 of pixels
-        tilt : float
-            The skew paramater
-
-        Return
-        ------
-        An numpy array of same shape
-        '''
 
     def process_image(self, image):
         image = self.rotate(image, random.randint(0, 360))
@@ -113,20 +62,20 @@ class Worker(multiprocessing.Process):
         image = self.step_func(image, random.randint(0, 10))
         image = self.skew(image, random.randint(0, 784))
         return image
-        '''Apply the image process functions
-		Experiment with the random bounds for the functions to see which produces good accuracies.
-
-        Parameters
-        ----------
-        image: numpy array
-            An array of size 784 of pixels
-
-        Return
-        ------
-        An numpy array of same shape
-        '''
 
     def run(self):
+        proc_name = self.name
+        while True:
+            next_job = self.jobs_queue.get()
+            if next_job is None:
+                # Poison pill means shutdown
+                print('{}: Exiting'.format(proc_name))
+                self.jobs_queue.task_done()
+                break
+            print('{}: {}'.format(proc_name, next_job))
+            answer = (self.process_image(self.data[next_job]), self.labels[next_job])
+            self.result_queue.put(answer)
+            self.jobs_queue.task_done()
         '''Process images from the jobs queue and add the result to the result queue.
 		Hint: you can either generate (i.e sample randomly from the training data)
 		the image batches here OR in ip_network.create_batches
