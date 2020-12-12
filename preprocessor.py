@@ -1,11 +1,17 @@
 import multiprocessing
+from scipy import ndimage
+import numpy as np
+import random
 
 
 class Worker(multiprocessing.Process):
     
     def __init__(self, jobs, result, training_data, batch_size):
         super().__init__()
-        
+        self.jobs = jobs
+        self.result = result
+        self.training_data = training_data
+        self.batch_size = batch_size
         ''' Initialize Worker and it's members.
 
         Parameters
@@ -21,10 +27,10 @@ class Worker(multiprocessing.Process):
         
         You should add parameters if you think you need to.
         '''
-        raise NotImplementedError("To be implemented")
 
     @staticmethod
     def rotate(image, angle):
+        return ndimage.rotate(image, angle, reshape=False)
         '''Rotate given image to the given angle
 
         Parameters
@@ -38,10 +44,10 @@ class Worker(multiprocessing.Process):
         ------
         An numpy array of same shape
         '''
-        raise NotImplementedError("To be implemented")
 
     @staticmethod
     def shift(image, dx, dy):
+        return ndimage.shift(image, [dx, dy])
         '''Shift given image
 
         Parameters
@@ -57,10 +63,13 @@ class Worker(multiprocessing.Process):
         ------
         An numpy array of same shape
         '''
-        raise NotImplementedError("To be implemented")
     
     @staticmethod
     def step_func(image, steps):
+        image *= steps
+        np.floor(image)
+        image *= (1/(steps-1))
+        return image
         '''Transform the image pixels acording to the step function
 
         Parameters
@@ -74,10 +83,16 @@ class Worker(multiprocessing.Process):
         ------
         An numpy array of same shape
         '''
-        raise NotImplementedError("To be implemented")
 
     @staticmethod
     def skew(image, tilt):
+        h, w = image.shape
+        skewed = np.empty_like(image)
+        skewed[:, :] = 0
+        for y in range(h):
+            s = tilt * y
+            skewed[y, :-s] = image[y, s:]
+        return skewed
         '''Skew the image
 
         Parameters
@@ -91,9 +106,13 @@ class Worker(multiprocessing.Process):
         ------
         An numpy array of same shape
         '''
-        raise NotImplementedError("To be implemented")
 
     def process_image(self, image):
+        image = self.rotate(image, random.randint(0, 360))
+        image = self.shift(image, random.randint(0, 784), random.randint(748))
+        image = self.step_func(image, random.randint(0, 10))
+        image = self.skew(image, random.randint(0, 784))
+        return image
         '''Apply the image process functions
 		Experiment with the random bounds for the functions to see which produces good accuracies.
 
@@ -106,7 +125,6 @@ class Worker(multiprocessing.Process):
         ------
         An numpy array of same shape
         '''
-        raise NotImplementedError("To be implemented")
 
     def run(self):
         '''Process images from the jobs queue and add the result to the result queue.
