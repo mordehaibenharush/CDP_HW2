@@ -1,7 +1,8 @@
 from numba import cuda
-from numba import njit
+from numba import njit, prange
 import imageio
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def correlation_gpu(kernel, image):
@@ -22,6 +23,16 @@ def correlation_gpu(kernel, image):
 
 @njit
 def correlation_numba(kernel, image):
+    res = np.empty_like(image)
+    img_rows, img_cols = res.shape
+    krnl_rows, krnl_cols = kernel.shape
+    img = np.zeros((img_rows + (2*(krnl_rows//2)), img_cols + (2*(krnl_cols//2))))
+    img[(krnl_rows//2):-(krnl_rows//2), (krnl_cols//2):-(krnl_cols//2)] = image[:, :]
+    for y in prange((krnl_rows//2), (krnl_rows//2)+img_rows):
+        for x in prange((krnl_cols//2), (krnl_cols//2)+img_cols):
+            curr = img[x-(krnl_rows//2):x+(krnl_rows//2), y-(krnl_cols//2):y+(krnl_cols//2)]
+            res[y][x] = np.sum(curr * kernel)
+
     '''Correlate using numba
     Parameters
     ----------
