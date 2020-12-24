@@ -81,7 +81,7 @@ def show_image(image):
 def compare_sobel():
     '''run sobel_operator with different correlation functions (CPU, numba, GPU)
         '''
-    pic = load_image
+    pic = load_image()
     res = pic
     # your implementation
     # show_image(res)

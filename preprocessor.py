@@ -43,6 +43,8 @@ class Worker(multiprocessing.Process):
     
     @staticmethod
     def step_func(image, steps):
+        if steps == 1:
+            return image
         image *= steps
         np.floor(image)
         image *= (1/(steps-1))
@@ -51,16 +53,17 @@ class Worker(multiprocessing.Process):
     @staticmethod
     def skew(image, tilt):
         h, w = image.shape
-        skewed = np.empty_like(image)
-        skewed[:, :] = 0
+        skewed = np.zeros(image.shape)
+        #skewed[:, :] = 0
         for y in range(h):
-            s = tilt * y
-            skewed[y, :-s] = image[y, s:]
+            s = int(tilt * y)
+            for x in range(w - s):
+                skewed[y][x] = image[y][s + x]
         return skewed
 
     def process_image(self, image):
         image = self.rotate(image, random.randint(0, 360))
-        image = self.shift(image, random.randint(0, 784), random.randint(748))
+        image = self.shift(image, random.randint(0, 784), random.randint(0, 748))
         image = self.step_func(image, random.randint(0, 10))
         image = self.skew(image, random.randint(0, 784))
         return image
@@ -76,13 +79,16 @@ class Worker(multiprocessing.Process):
                # break
            # print('{}: {}'.format(proc_name, next_job))
         processed_batch = []
-        labels = []
-        for image, label in batch:
-            res = self.process_image(image)
+        processed_labels = []
+        data = batch[0]
+        labels = batch[1]
+        for image, label in zip(data, labels):
+            res = self.process_image(np.array(image).reshape((len(image), 1)))
             processed_batch.append(res)
-            labels.append(label)
+            processed_labels.append(label)
         self.result_queue.put((processed_batch, labels))
         self.jobs_queue.task_done()
+        print('worker done')
         '''Process images from the jobs queue and add the result to the result queue.
 		Hint: you can either generate (i.e sample randomly from the training data)
 		the image batches here OR in ip_network.create_batches
@@ -91,8 +97,8 @@ class Worker(multiprocessing.Process):
 
 
 def load_image():
-    fname = 'image.jpg'
-    pic = imageio.imread('imageio:image.jpg')
+    fname = 'data/image.jpg'
+    pic = imageio.imread(fname)
     to_gray = lambda rgb : np.dot(rgb[... , :3] , [0.299 , 0.587, 0.114])
     gray_pic = to_gray(pic)
     return gray_pic
@@ -114,12 +120,12 @@ def show_image(image):
 def test():
     '''run sobel_operator with different correlation functions (CPU, numba, GPU)
         '''
-    pic = load_image
+    pic = load_image()
     res = pic
-    print("before: ")
+    #print("before: ")
     show_image(pic)
-    res = Worker.rotate(pic, 90)
-    print("after: ")
+    res = Worker.skew(pic, 0.3)
+    #print("after: ")
     show_image(res)
 
 

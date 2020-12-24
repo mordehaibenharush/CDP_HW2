@@ -7,7 +7,6 @@ if __name__ == '__main__':
 
     # initialize training, validation and testing data
     training_data, validation_data, test_data = load_mnist()
-
     # initialize layer sizes as list
     layers = [784, 128, 64, 10]
 
