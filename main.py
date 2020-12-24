@@ -1,5 +1,5 @@
 from collect import *
-from HW.ip_network import *
+from ip_network import *
 from time import time
 
 

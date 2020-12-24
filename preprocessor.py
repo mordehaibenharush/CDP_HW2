@@ -3,6 +3,8 @@ from scipy import ndimage
 import numpy as np
 import random
 import utils
+import imageio
+import matplotlib.pyplot as plt
 
 
 class Worker(multiprocessing.Process):
@@ -64,20 +66,62 @@ class Worker(multiprocessing.Process):
         return image
 
     def run(self):
-        proc_name = self.name
-        while True:
-            next_job = self.jobs_queue.get()
-            if next_job is None:
+        #proc_name = self.name
+        #while True:
+        batch = self.jobs_queue.get()
+            #if next_job is None:
                 # Poison pill means shutdown
-                print('{}: Exiting'.format(proc_name))
-                self.jobs_queue.task_done()
-                break
-            print('{}: {}'.format(proc_name, next_job))
-            answer = (self.process_image(self.data[next_job]), self.labels[next_job])
-            self.result_queue.put(answer)
-            self.jobs_queue.task_done()
+             #   print('{}: Exiting'.format(proc_name))
+              #  self.jobs_queue.task_done()
+               # break
+           # print('{}: {}'.format(proc_name, next_job))
+        processed_batch = []
+        labels = []
+        for image, label in batch:
+            res = self.process_image(image)
+            processed_batch.append(res)
+            labels.append(label)
+        self.result_queue.put((processed_batch, labels))
+        self.jobs_queue.task_done()
         '''Process images from the jobs queue and add the result to the result queue.
 		Hint: you can either generate (i.e sample randomly from the training data)
 		the image batches here OR in ip_network.create_batches
         '''
-        raise NotImplementedError("To be implemented")
+
+
+
+def load_image():
+    fname = 'image.jpg'
+    pic = imageio.imread('imageio:image.jpg')
+    to_gray = lambda rgb : np.dot(rgb[... , :3] , [0.299 , 0.587, 0.114])
+    gray_pic = to_gray(pic)
+    return gray_pic
+
+
+def show_image(image):
+    """ Plot an image with matplotlib
+
+    Parameters
+    ----------
+    image: list
+        2d list of pixels
+    """
+    #img = np.array(image, dtype=float)
+    plt.imshow(image, cmap='gray')
+    plt.show()
+
+# Note use image show on your local computer to view the results
+def test():
+    '''run sobel_operator with different correlation functions (CPU, numba, GPU)
+        '''
+    pic = load_image
+    res = pic
+    print("before: ")
+    show_image(pic)
+    res = Worker.rotate(pic, 90)
+    print("after: ")
+    show_image(res)
+
+
+if __name__ == "__main__":
+    test()

@@ -32,7 +32,7 @@ def correlation_numba(kernel, image):
         for x in prange((krnl_cols//2), (krnl_cols//2)+img_cols):
             curr = img[x-(krnl_rows//2):x+(krnl_rows//2), y-(krnl_cols//2):y+(krnl_cols//2)]
             res[y][x] = np.sum(curr * kernel)
-
+    return res
     '''Correlate using numba
     Parameters
     ----------
