@@ -71,7 +71,9 @@ class Worker(multiprocessing.Process):
     def run(self):
         #proc_name = self.name
         #while True:
+        print("worker started")
         batch = self.jobs_queue.get()
+        print("got job")
             #if next_job is None:
                 # Poison pill means shutdown
              #   print('{}: Exiting'.format(proc_name))
@@ -83,12 +85,13 @@ class Worker(multiprocessing.Process):
         data = batch[0]
         labels = batch[1]
         for image, label in zip(data, labels):
-            res = self.process_image(np.array(image).reshape((len(image), 1)))
-            processed_batch.append(res)
+            #res = self.process_image(np.array(image).reshape((len(image), 1)))
+            processed_batch.append(image)
             processed_labels.append(label)
         self.result_queue.put((processed_batch, labels))
+        print("put result")
         self.jobs_queue.task_done()
-        print('worker done')
+        print("worker done")
         '''Process images from the jobs queue and add the result to the result queue.
 		Hint: you can either generate (i.e sample randomly from the training data)
 		the image batches here OR in ip_network.create_batches

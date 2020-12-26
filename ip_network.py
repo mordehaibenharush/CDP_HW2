@@ -9,7 +9,7 @@ class IPNeuralNetwork(NeuralNetwork):
         '''
         Override this function to create and destroy workers
         '''
-        num_cpu = os.environ['SLURM_CPUS_PER_TASK']
+        #num_cpu = os.environ['SLURM_CPUS_PER_TASK']
         # Establish communication queues
         tasks = multiprocessing.JoinableQueue()
         results = multiprocessing.Queue()
@@ -18,7 +18,10 @@ class IPNeuralNetwork(NeuralNetwork):
         # (Call Worker() with self.mini_batch_size as the batch_size)
         num_workers = num_jobs
         print('Creating {} workers'.format(num_workers))
-        workers = [Worker(tasks, results, training_data, self.mini_batch_size) for _ in range(num_workers)]
+        workers = []
+        for _ in range(num_workers):
+            w = Worker(tasks, results, training_data, self.mini_batch_size)
+            workers.append(w)
         for w in workers:
             w.start()
 
@@ -36,6 +39,7 @@ class IPNeuralNetwork(NeuralNetwork):
          #   tasks.put(None)
 
         tasks.join()
+        print("tasks joined")
         processed_data = []
         processed_labels = []
         for r in results.get():
