@@ -1,5 +1,6 @@
 from network import *
-from preprocessor import *
+#from preprocessor import *
+from prepro import *
 import os
 
 
@@ -10,6 +11,7 @@ class IPNeuralNetwork(NeuralNetwork):
         Override this function to create and destroy workers
         '''
         #num_cpu = os.environ['SLURM_CPUS_PER_TASK']
+        num_cpu = 1
         # Establish communication queues
         tasks = multiprocessing.JoinableQueue()
         results = multiprocessing.Queue()
@@ -18,40 +20,55 @@ class IPNeuralNetwork(NeuralNetwork):
         # (Call Worker() with self.mini_batch_size as the batch_size)
         num_workers = num_jobs
         print('Creating {} workers'.format(num_workers))
-        workers = []
-        for _ in range(num_workers):
-            w = Worker(tasks, results, training_data, self.mini_batch_size)
-            workers.append(w)
-        for w in workers:
-            w.start()
+        #workers = []
+        #for _ in range(num_workers):
+         #   w = Worker(tasks, results, training_data, self.mini_batch_size)
+          #  workers.append(w)
+        #for w in workers:
+         #   w.start()
 
 		# 2. Set jobs
         data = training_data[0]
         labels = training_data[1]
         mini_batches = self.create_batches(data, labels, self.mini_batch_size)
 
-        num_jobs = self.number_of_batches
+        workers = []
+        for _ in range(len(mini_batches)):
+            w = Worker(tasks, results, training_data, self.mini_batch_size)
+            workers.append(w)
+
+        for w in workers:
+            w.start()
+
         for batch in mini_batches:
             tasks.put(batch)
 
+        #for w in workers:
+            #w.start()
+
         # Add a poison pill for each consumer
         #for _ in range(num_workers):
-         #   tasks.put(None)
-
-        tasks.join()
-        print("tasks joined")
-        processed_data = []
-        processed_labels = []
-        for r in results.get():
-            processed_data += r[0]
-            processed_labels += r[1]
-        augmented_data = (processed_data, processed_labels)
-        # Call the parent's fit. Notice how create_batches is called inside super.fit().
-        super().fit(augmented_data, validation_data)
-        
+            #tasks.put(None)
         # 3. Stop Workers
         for w in workers:
             w.join()
+
+        #tasks.join()
+        #print("tasks joined")
+        #processed_data = []
+        #processed_labels = []
+        #while not results.empty():
+            #r = results.get()
+            #processed_data += r[0]
+            #processed_labels += r[1]
+            #print("got result")
+        #augmented_data = (processed_data, processed_labels)
+        # Call the parent's fit. Notice how create_batches is called inside super.fit().
+        super().fit((data, labels), validation_data)
+        
+         #3. Stop Workers
+        #for w in workers:
+         #   w.join()
 
     def create_batches(self, data, labels, batch_size):
         """

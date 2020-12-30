@@ -16,50 +16,43 @@ class Worker(multiprocessing.Process):
         self.data = training_data[0]
         self.labels = training_data[1]
         self.batch_size = batch_size
-        #self.batch = utils.create_batches(training_data[0], training_data[1], batch_size)
-        ''' Initialize Worker and it's members.
-
-        Parameters
-        ----------
-        jobs: JoinableQueue
-            A jobs Queue for the worker.
-        result: Queue
-            A results Queue for the worker to put it's results in.
-		training_data: 
-			A tuple of (training images array, image lables array)
-		batch_size:
-			workers batch size of images (mini batch size)
-        
-        You should add parameters if you think you need to.
-        '''
 
     @staticmethod
     def rotate(image, angle):
-        return ndimage.rotate(image, angle, reshape=False)
+        res = image.reshape((28, 28))
+        res = ndimage.rotate(res, angle, reshape=False)
+        res = res.reshape((784, ))
+        return res
 
     @staticmethod
     def shift(image, dx, dy):
-        return ndimage.shift(image, [dx, dy])
-    
+        res = image.reshape((28, 28))
+        res = ndimage.shift(res, [dx, dy])
+        res = res.reshape((784,))
+        return res
+
     @staticmethod
     def step_func(image, steps):
+        res = image.reshape((28, 28))
         if steps == 1:
-            return image
-        image *= steps
-        np.floor(image)
-        image *= (1/(steps-1))
-        return image
+            return res
+        res *= steps
+        np.floor(res)
+        res *= (1/(steps-1))
+        res = res.reshape((784,))
+        return res
 
     @staticmethod
     def skew(image, tilt):
-        h, w = image.shape
-        skewed = np.zeros(image.shape)
-        #skewed[:, :] = 0
+        img = image.reshape((28, 28))
+        h, w = img.shape
+        res = np.zeros(img.shape)
         for y in range(h):
             s = int(tilt * y)
             for x in range(w - s):
-                skewed[y][x] = image[y][s + x]
-        return skewed
+                res[y][x] = img[y][s + x]
+        res = res.reshape((784,))
+        return res
 
     def process_image(self, image):
         image = self.rotate(image, random.randint(0, 360))
@@ -69,33 +62,31 @@ class Worker(multiprocessing.Process):
         return image
 
     def run(self):
-        #proc_name = self.name
-        #while True:
         print("worker started")
-        batch = self.jobs_queue.get()
-        print("got job")
-            #if next_job is None:
-                # Poison pill means shutdown
-             #   print('{}: Exiting'.format(proc_name))
-              #  self.jobs_queue.task_done()
-               # break
-           # print('{}: {}'.format(proc_name, next_job))
-        processed_batch = []
-        processed_labels = []
-        data = batch[0]
-        labels = batch[1]
-        for image, label in zip(data, labels):
-            #res = self.process_image(np.array(image).reshape((len(image), 1)))
-            processed_batch.append(image)
-            processed_labels.append(label)
-        self.result_queue.put((processed_batch, labels))
-        print("put result")
+        proc_name = self.name
+        while True:
+            indexes = self.jobs_queue.get()
+            print("got job")
+            if indexes is None:
+                #Poison pill means shutdown
+                print('{}: Exiting'.format(proc_name))
+                self.jobs_queue.task_done()
+                break
+            #print('{}: {}'.format(proc_name, next_job))
+            processed_images = []
+            processed_labels = []
+            images = self.data[indexes]
+            labels = self.labels[indexes]
+            for image, label in zip(images, labels):
+                #res = self.process_image(np.array(image))
+                res = image
+                processed_images.append(res)
+                processed_labels.append(label)
+        self.result_queue.put((processed_images, processed_labels))
+        print("job put")
         self.jobs_queue.task_done()
         print("worker done")
-        '''Process images from the jobs queue and add the result to the result queue.
-		Hint: you can either generate (i.e sample randomly from the training data)
-		the image batches here OR in ip_network.create_batches
-        '''
+
 
 
 
