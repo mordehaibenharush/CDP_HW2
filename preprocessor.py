@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 class Worker(multiprocessing.Process):
     
     def __init__(self, jobs, result, training_data, batch_size):
-        super().__init__()
+        super().__init__(target=self.run)
         self.jobs_queue = jobs
         self.result_queue = result
         self.data = training_data[0]
