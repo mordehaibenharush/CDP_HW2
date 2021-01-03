@@ -1,6 +1,7 @@
 from network import *
 from preprocessor import *
 import os
+from my_queue import *
 
 
 class IPNeuralNetwork(NeuralNetwork):
@@ -11,7 +12,7 @@ class IPNeuralNetwork(NeuralNetwork):
         num_cpu = int(os.environ['SLURM_CPUS_PER_TASK'])
         # Establish communication queues
         self.tasks = multiprocessing.JoinableQueue()
-        self.results = multiprocessing.Queue()
+        self.results = MyQueue()# multiprocessing.Queue()
         # 1. Create Workers
         # (Call Worker() with self.mini_batch_size as the batch_size)
         self.num_workers = num_cpu

@@ -5,6 +5,7 @@ import random
 import utils
 import imageio
 import matplotlib.pyplot as plt
+from my_queue import *
 
 
 class Worker(multiprocessing.Process):
