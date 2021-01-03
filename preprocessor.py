@@ -56,9 +56,9 @@ class Worker(multiprocessing.Process):
 
     def process_image(self, image):
         image = self.rotate(image, random.randint(0, 360))
-        image = self.shift(image, random.randint(0, 784), random.randint(0, 748))
+        image = self.shift(image, random.randint(0, 28), random.randint(0, 28))
         image = self.step_func(image, random.randint(1, 10))
-        image = self.skew(image, random.randint(0, 0.3))
+        image = self.skew(image, (random.randint(0, 4))/10)
         return image
 
     def run(self):
@@ -67,7 +67,7 @@ class Worker(multiprocessing.Process):
         while True:
             indexes = self.jobs_queue.get()
             # print("got job")
-            if indexes is "stop":
+            if indexes is None:
                 # Poison pill means shutdown
                 # print('{}: Exiting'.format(proc_name))
                 self.jobs_queue.task_done()
@@ -88,7 +88,7 @@ class Worker(multiprocessing.Process):
             # print("job almost put")
             self.result_queue.put((images, labels))
             # print("job put")
-        self.jobs_queue.task_done()
+            self.jobs_queue.task_done()
         # print("worker done")
 
 

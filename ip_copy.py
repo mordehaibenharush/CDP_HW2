@@ -34,13 +34,17 @@ class IPNeuralNetwork(NeuralNetwork):
         # 3. Stop Workers
         #print("*******************************")
         for _ in range(self.num_workers):
-            self.tasks.put("stop")
-        # self.tasks.join()
+            self.tasks.put(None)
+
+        self.tasks.join()
+        for w in workers:
+            #print("worker almost started")
+            w.join()
 
     def create_batches(self, data, labels, batch_size):
-        for _ in range(self.number_of_batches):
+        for n in range(self.number_of_batches):
             indexes = random.sample(range(0, data.shape[0]), batch_size)
-            self.tasks.put("indexes")
+            self.tasks.put(n)
             #print("task_put")
 
         processed_batches = []
