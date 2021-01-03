@@ -1,5 +1,5 @@
 from collect import *
-from ip_network import *
+from ip_copy import *
 from time import time
 
 

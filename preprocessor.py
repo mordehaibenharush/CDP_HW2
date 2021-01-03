@@ -57,35 +57,39 @@ class Worker(multiprocessing.Process):
     def process_image(self, image):
         image = self.rotate(image, random.randint(0, 360))
         image = self.shift(image, random.randint(0, 784), random.randint(0, 748))
-        image = self.step_func(image, random.randint(0, 10))
-        image = self.skew(image, random.randint(0, 784))
+        image = self.step_func(image, random.randint(1, 10))
+        image = self.skew(image, random.randint(0, 0.3))
         return image
 
     def run(self):
-        print("worker started")
-        proc_name = self.name
+        # print("worker started")
+        # proc_name = self.name
         while True:
             indexes = self.jobs_queue.get()
-            print("got job")
-            if indexes is None:
-                #Poison pill means shutdown
-                print('{}: Exiting'.format(proc_name))
+            # print("got job")
+            if indexes is "stop":
+                # Poison pill means shutdown
+                # print('{}: Exiting'.format(proc_name))
                 self.jobs_queue.task_done()
+                # print("done")
                 break
-            #print('{}: {}'.format(proc_name, next_job))
+            # print('{}: {}'.format(proc_name, next_job))
             processed_images = []
             processed_labels = []
+            indexes = random.sample(range(0, self.data.shape[0]), self.batch_size)
             images = self.data[indexes]
             labels = self.labels[indexes]
+            # print("iterating over images")
             for image, label in zip(images, labels):
-                #res = self.process_image(np.array(image))
+                res = self.process_image(np.array(image))
                 res = image
                 processed_images.append(res)
                 processed_labels.append(label)
-        self.result_queue.put((processed_images, processed_labels))
-        print("job put")
+            # print("job almost put")
+            self.result_queue.put((images, labels))
+            # print("job put")
         self.jobs_queue.task_done()
-        print("worker done")
+        # print("worker done")
 
 
 
