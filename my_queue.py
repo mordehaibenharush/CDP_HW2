@@ -25,12 +25,6 @@ class MyQueue(object):
 
     def get(self):
         return self.read_p.recv()
-        '''Get the next message from queue (FIFO)
-            
-        Return
-        ------
-        An object
-        '''
 
 
 def reader_pipe(q):

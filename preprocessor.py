@@ -9,7 +9,7 @@ from my_queue import *
 
 
 class Worker(multiprocessing.Process):
-    
+
     def __init__(self, jobs, result, training_data, batch_size):
         super().__init__(target=self.run)
         self.jobs_queue = jobs
@@ -21,8 +21,8 @@ class Worker(multiprocessing.Process):
     @staticmethod
     def rotate(image, angle):
         res = image.reshape((28, 28))
-        res = ndimage.rotate(res, angle, reshape=False)
-        res = res.reshape((784, ))
+        res = ndimage.rotate(res, angle, reshape=True)
+        res.resize((784,))
         return res
 
     @staticmethod
@@ -39,7 +39,7 @@ class Worker(multiprocessing.Process):
             return res
         res *= steps
         np.floor(res)
-        res *= (1/(steps-1))
+        res *= (1 / (steps - 1))
         res = res.reshape((784,))
         return res
 
@@ -56,11 +56,11 @@ class Worker(multiprocessing.Process):
         return res
 
     def process_image(self, image):
-        image = self.rotate(image, random.randint(0, 360))
-        image = self.shift(image, random.randint(0, 28), random.randint(0, 28))
-        image = self.step_func(image, random.randint(1, 10))
-        image = self.skew(image, (random.randint(0, 4))/10)
-        return image
+        res1 = self.rotate(image, random.randint(0, 10))
+        res2 = self.shift(res1, random.randint(0, 3), random.randint(0, 3))
+        res3 = self.step_func(res2, random.randint(1, 3))
+        res4 = self.skew(res3, (random.randint(0, 3)) / 10)
+        return res4
 
     def run(self):
         # print("worker started")
@@ -83,7 +83,6 @@ class Worker(multiprocessing.Process):
             # print("iterating over images")
             for image, label in zip(images, labels):
                 res = self.process_image(np.array(image))
-                res = image
                 processed_images.append(res)
                 processed_labels.append(label)
             # print("job almost put")
@@ -93,12 +92,10 @@ class Worker(multiprocessing.Process):
         # print("worker done")
 
 
-
-
 def load_image():
     fname = 'data/image.jpg'
     pic = imageio.imread(fname)
-    to_gray = lambda rgb : np.dot(rgb[... , :3] , [0.299 , 0.587, 0.114])
+    to_gray = lambda rgb: np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
     gray_pic = to_gray(pic)
     return gray_pic
 
@@ -111,9 +108,10 @@ def show_image(image):
     image: list
         2d list of pixels
     """
-    #img = np.array(image, dtype=float)
+    # img = np.array(image, dtype=float)
     plt.imshow(image, cmap='gray')
     plt.show()
+
 
 # Note use image show on your local computer to view the results
 def test():
@@ -121,10 +119,10 @@ def test():
         '''
     pic = load_image()
     res = pic
-    #print("before: ")
+    # print("before: ")
     show_image(pic)
     res = Worker.skew(pic, 0.3)
-    #print("after: ")
+    # print("after: ")
     show_image(res)
 
 
