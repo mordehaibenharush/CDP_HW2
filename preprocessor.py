@@ -21,8 +21,8 @@ class Worker(multiprocessing.Process):
     @staticmethod
     def rotate(image, angle):
         res = image.reshape((28, 28))
-        res = ndimage.rotate(res, angle, reshape=True)
-        res.resize((784,))
+        res = ndimage.rotate(res, angle, reshape=False)
+        res.reshape((784,))
         return res
 
     @staticmethod
@@ -50,46 +50,41 @@ class Worker(multiprocessing.Process):
         res = np.zeros(img.shape)
         for y in range(h):
             s = int(tilt * y)
-            for x in range(w - s):
-                res[y][x] = img[y][s + x]
+            for x in range(w):
+                if w > s+x > 0:
+                    res[y][x] = img[y][s + x]
         res = res.reshape((784,))
         return res
 
     def process_image(self, image):
-        res1 = self.rotate(image, random.randint(0, 10))
-        res2 = self.shift(res1, random.randint(0, 3), random.randint(0, 3))
-        res3 = self.step_func(res2, random.randint(1, 3))
-        res4 = self.skew(res3, (random.randint(0, 3)) / 10)
+        res1 = self.rotate(image, random.randint(-10, 10))
+        res2 = self.shift(res1, random.randint(-3, 3), random.randint(-3, 3))
+        res3 = self.step_func(res2, random.randint(2, 5))
+        res4 = self.skew(res3, 0.4*random.random()-0.2)
         return res4
 
     def run(self):
-        # print("worker started")
-        # proc_name = self.name
+
         while True:
             indexes = self.jobs_queue.get()
-            # print("got job")
+
             if indexes is None:
-                # Poison pill means shutdown
-                # print('{}: Exiting'.format(proc_name))
                 self.jobs_queue.task_done()
-                # print("done")
                 break
-            # print('{}: {}'.format(proc_name, next_job))
+
             processed_images = []
             processed_labels = []
             indexes = random.sample(range(0, self.data.shape[0]), self.batch_size)
             images = self.data[indexes]
             labels = self.labels[indexes]
-            # print("iterating over images")
+
             for image, label in zip(images, labels):
                 res = self.process_image(np.array(image))
                 processed_images.append(res)
                 processed_labels.append(label)
-            # print("job almost put")
+
             self.result_queue.put((images, labels))
-            # print("job put")
             self.jobs_queue.task_done()
-        # print("worker done")
 
 
 def load_image():
