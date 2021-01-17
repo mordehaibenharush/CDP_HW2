@@ -57,10 +57,10 @@ class Worker(multiprocessing.Process):
         return res
 
     def process_image(self, image):
-        res1 = self.rotate(image, random.randint(-10, 10))
-        res2 = self.shift(res1, random.randint(-3, 3), random.randint(-3, 3))
+        res1 = self.rotate(image, random.randint(0, 20))
+        res2 = self.shift(res1, random.randint(0, 5), random.randint(0, 5))
         res3 = self.step_func(res2, random.randint(2, 5))
-        res4 = self.skew(res3, 0.4*random.random()-0.2)
+        res4 = self.skew(res3, random.randint(0, 3)/10)
         return res4
 
     def run(self):
